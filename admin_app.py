@@ -580,9 +580,9 @@ class SkillForm:
 
         # Buttons
         button_frame = tk.Frame(self.window)
-        button_frame.pack(pady=30, side=tk.BOTTOM)
-        tk.Button(button_frame, text="Submit", command=self.submit, bg="green", fg="white", width=12).pack(side=tk.LEFT, padx=10)
-        tk.Button(button_frame, text="Cancel", command=self.window.destroy, width=12).pack(side=tk.LEFT, padx=10)
+        button_frame.pack(pady=20)
+        tk.Button(button_frame, text="Submit", command=self.submit, bg="green", fg="white").pack(side=tk.LEFT, padx=10)
+        tk.Button(button_frame, text="Cancel", command=self.window.destroy).pack(side=tk.LEFT, padx=10)
 
     def populate_fields(self):
         """Populate form fields with existing skill data."""
