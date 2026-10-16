@@ -46,6 +46,17 @@ To run the application directly:
 python admin_app.py
 ```
 
+### Environment Configuration
+
+The application automatically connects to Supabase using credentials from a `.env` file. Create a `.env` file in the project root with the following format:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
+```
+
+If the `.env` file is not found or credentials are missing, you can manually enter them in the application's Supabase Configuration section.
+
 ### Supabase Setup
 
 1. Create a Supabase project at https://supabase.com
@@ -164,6 +175,26 @@ Local Files → Admin App → Supabase → Deployed Website
 - Check that your Supabase project is active
 - Verify that the required tables exist in your database
 - Check Row Level Security (RLS) policies in Supabase
+
+### Error Messages
+
+The application now provides specific error messages to help diagnose issues:
+
+**Connection Errors:**
+- "Invalid Supabase URL provided" - Check your URL format
+- "Invalid Supabase API key provided" - Verify your API key
+- "Network error: Could not connect to Supabase" - Check your internet connection
+
+**Insert Errors:**
+- "Table 'projects' does not exist in Supabase" - Create the required tables first
+- "Permission denied: Check Row Level Security (RLS) policies" - Update RLS policies to allow inserts
+- "Duplicate entry: A project with this name may already exist" - Use a unique name
+- "Column error: ..." - Check if table schema matches data structure
+
+**Verification Errors:**
+- "Table 'projects' does not exist in Supabase" - Create the table
+- "Permission denied: Cannot access 'projects' table" - Check RLS policies
+- "No data found in projects table" - The table is empty
 
 ### Image Upload Issues
 

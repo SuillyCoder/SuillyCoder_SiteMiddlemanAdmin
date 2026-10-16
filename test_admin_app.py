@@ -2,6 +2,8 @@ import unittest
 from unittest.mock import Mock, patch, MagicMock
 import sys
 import os
+import tempfile
+from unittest.mock import patch as mock_patch
 
 # Add the current directory to the path to import the admin_app module
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,6 +16,8 @@ sys.modules['tkinter.filedialog'] = MagicMock()
 sys.modules['PIL'] = MagicMock()
 sys.modules['PIL.Image'] = MagicMock()
 sys.modules['PIL.ImageTk'] = MagicMock()
+sys.modules['dotenv'] = MagicMock()
+sys.modules['dotenv'].load_dotenv = MagicMock()
 
 from admin_app import SupabaseManager
 
@@ -45,10 +49,11 @@ class TestSupabaseManager(unittest.TestCase):
         mock_create_client.return_value = mock_client
 
         manager = SupabaseManager(self.test_url, self.test_key)
-        result = manager.connect()
+        result, message = manager.connect()
 
         self.assertTrue(result)
         self.assertIsNotNone(manager.client)
+        self.assertIn("success", message.lower())
 
     @patch('admin_app.create_client')
     def test_connect_failure(self, mock_create_client):
@@ -56,10 +61,10 @@ class TestSupabaseManager(unittest.TestCase):
         mock_create_client.side_effect = Exception("Connection error")
 
         manager = SupabaseManager(self.test_url, self.test_key)
-        result = manager.connect()
+        result, message = manager.connect()
 
         self.assertFalse(result)
-        self.assertIsNone(manager.client)
+        self.assertIn("error", message.lower())
 
     @patch('admin_app.create_client')
     def test_insert_project_success(self, mock_create_client):
@@ -81,9 +86,10 @@ class TestSupabaseManager(unittest.TestCase):
             "image_path": ""
         }
 
-        result = manager.insert_project(project_data)
+        result, message = manager.insert_project(project_data)
 
         self.assertTrue(result)
+        self.assertIn("success", message.lower())
         mock_client.table.assert_called_once_with('projects')
 
     @patch('admin_app.create_client')
@@ -98,9 +104,10 @@ class TestSupabaseManager(unittest.TestCase):
         manager = SupabaseManager(self.test_url, self.test_key)
         project_data = {"name": "Test Project"}
 
-        result = manager.insert_project(project_data)
+        result, message = manager.insert_project(project_data)
 
         self.assertFalse(result)
+        self.assertIn("error", message.lower())
 
     @patch('admin_app.create_client')
     def test_insert_certification_success(self, mock_create_client):
@@ -119,9 +126,10 @@ class TestSupabaseManager(unittest.TestCase):
             "image_path": ""
         }
 
-        result = manager.insert_certification(cert_data)
+        result, message = manager.insert_certification(cert_data)
 
         self.assertTrue(result)
+        self.assertIn("success", message.lower())
         mock_client.table.assert_called_once_with('certifications')
 
     @patch('admin_app.create_client')
@@ -141,9 +149,10 @@ class TestSupabaseManager(unittest.TestCase):
             "icon_path": ""
         }
 
-        result = manager.insert_skill(skill_data)
+        result, message = manager.insert_skill(skill_data)
 
         self.assertTrue(result)
+        self.assertIn("success", message.lower())
         mock_client.table.assert_called_once_with('skills')
 
     @patch('admin_app.create_client')
@@ -158,9 +167,10 @@ class TestSupabaseManager(unittest.TestCase):
         mock_create_client.return_value = mock_client
 
         manager = SupabaseManager(self.test_url, self.test_key)
-        result = manager.verify_data_retention("projects")
+        result, message = manager.verify_data_retention("projects")
 
         self.assertTrue(result)
+        self.assertIn("found", message.lower())
 
     @patch('admin_app.create_client')
     def test_verify_data_retention_no_data(self, mock_create_client):
@@ -174,9 +184,10 @@ class TestSupabaseManager(unittest.TestCase):
         mock_create_client.return_value = mock_client
 
         manager = SupabaseManager(self.test_url, self.test_key)
-        result = manager.verify_data_retention("projects")
+        result, message = manager.verify_data_retention("projects")
 
         self.assertFalse(result)
+        self.assertIn("no data", message.lower())
 
     @patch('admin_app.create_client')
     def test_verify_data_retention_error(self, mock_create_client):
@@ -188,9 +199,63 @@ class TestSupabaseManager(unittest.TestCase):
         mock_create_client.return_value = mock_client
 
         manager = SupabaseManager(self.test_url, self.test_key)
-        result = manager.verify_data_retention("projects")
+        result, message = manager.verify_data_retention("projects")
 
         self.assertFalse(result)
+        self.assertIn("error", message.lower())
+
+    @patch('admin_app.create_client')
+    def test_upload_image_success(self, mock_create_client):
+        """Test successful image upload."""
+        mock_client = Mock()
+        mock_storage = Mock()
+        mock_bucket = Mock()
+        mock_client.storage = mock_storage
+        mock_storage.from_ = Mock(return_value=mock_bucket)
+        mock_bucket.upload = Mock(return_value=None)
+        mock_bucket.get_public_url = Mock(return_value="https://example.com/public/image.jpg")
+        mock_create_client.return_value = mock_client
+
+        manager = SupabaseManager(self.test_url, self.test_key)
+
+        # Create a temporary test file
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as f:
+            f.write(b"fake image data")
+            temp_path = f.name
+
+        try:
+            success, message, url = manager.upload_image(temp_path)
+            self.assertTrue(success)
+            self.assertIn("success", message.lower())
+            self.assertEqual(url, "https://example.com/public/image.jpg")
+        finally:
+            os.unlink(temp_path)
+
+    @patch('admin_app.create_client')
+    def test_upload_image_bucket_not_found(self, mock_create_client):
+        """Test image upload when bucket not found."""
+        mock_client = Mock()
+        mock_storage = Mock()
+        mock_bucket = Mock()
+        mock_client.storage = mock_storage
+        mock_storage.from_ = Mock(return_value=mock_bucket)
+        mock_bucket.upload = Mock(side_effect=Exception("Bucket 'Site_Images' not found"))
+        mock_create_client.return_value = mock_client
+
+        manager = SupabaseManager(self.test_url, self.test_key)
+
+        # Create a temporary test file
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as f:
+            f.write(b"fake image data")
+            temp_path = f.name
+
+        try:
+            success, message, url = manager.upload_image(temp_path)
+            self.assertFalse(success)
+            self.assertIn("bucket", message.lower())
+            self.assertIsNone(url)
+        finally:
+            os.unlink(temp_path)
 
 
 class TestDataStructures(unittest.TestCase):
