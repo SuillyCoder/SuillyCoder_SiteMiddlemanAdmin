@@ -580,9 +580,9 @@ class SkillForm:
 
         # Buttons
         button_frame = tk.Frame(self.window)
-        button_frame.pack(pady=20)
-        tk.Button(button_frame, text="Submit", command=self.submit, bg="green", fg="white").pack(side=tk.LEFT, padx=10)
-        tk.Button(button_frame, text="Cancel", command=self.window.destroy).pack(side=tk.LEFT, padx=10)
+        button_frame.pack(pady=30, side=tk.BOTTOM)
+        tk.Button(button_frame, text="Submit", command=self.submit, bg="green", fg="white", width=12).pack(side=tk.LEFT, padx=10)
+        tk.Button(button_frame, text="Cancel", command=self.window.destroy, width=12).pack(side=tk.LEFT, padx=10)
 
     def populate_fields(self):
         """Populate form fields with existing skill data."""
@@ -591,6 +591,36 @@ class SkillForm:
 
         self.name_entry.insert(0, self.skill_data.get('name', ''))
         self.category_entry.insert(0, self.skill_data.get('category', ''))
+
+    def submit(self):
+        """Submit the skill data."""
+        name = self.name_entry.get().strip()
+        category = self.category_entry.get().strip()
+
+        if not name or not category:
+            messagebox.showerror("Error", "Please fill in all required fields.")
+            return
+
+        skill_data = {
+            "name": name,
+            "category": category,
+            "icon_path": ""
+        }
+
+        if self.supabase_manager:
+            if self.edit_mode:
+                success, message = self.supabase_manager.update_skill(self.skill_data['id'], skill_data)
+            else:
+                success, message = self.supabase_manager.insert_skill(skill_data)
+
+            if success:
+                messagebox.showinfo("Success", message)
+                self.window.destroy()
+            else:
+                messagebox.showerror("Error", message)
+        else:
+            messagebox.showinfo("Success", "Skill data prepared (no database connection).")
+            self.window.destroy()
 
 
 class ProjectListDialog:
@@ -795,36 +825,6 @@ class SkillListDialog:
             self.window.destroy()
         else:
             messagebox.showerror("Error", message)
-
-    def submit(self):
-        """Submit the skill data."""
-        name = self.name_entry.get().strip()
-        category = self.category_entry.get().strip()
-
-        if not name or not category:
-            messagebox.showerror("Error", "Please fill in all required fields.")
-            return
-
-        skill_data = {
-            "name": name,
-            "category": category,
-            "icon_path": ""
-        }
-
-        if self.supabase_manager:
-            if self.edit_mode:
-                success, message = self.supabase_manager.update_skill(self.skill_data['id'], skill_data)
-            else:
-                success, message = self.supabase_manager.insert_skill(skill_data)
-
-            if success:
-                messagebox.showinfo("Success", message)
-                self.window.destroy()
-            else:
-                messagebox.showerror("Error", message)
-        else:
-            messagebox.showinfo("Success", "Skill data prepared (no database connection).")
-            self.window.destroy()
 
 
 class AdminApp:
