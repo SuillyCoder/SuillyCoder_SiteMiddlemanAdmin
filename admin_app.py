@@ -433,7 +433,7 @@ class CertificationForm:
         self.edit_mode = cert_data is not None
         self.window = tk.Toplevel(parent)
         self.window.title("Edit Certification" if self.edit_mode else "Add Certification")
-        self.window.geometry("500x500")
+        self.window.geometry("500x600")
         self.image_path = None
         self.current_image_url = cert_data.get('image_path', '') if self.edit_mode else ''
         self.create_widgets()
@@ -452,6 +452,11 @@ class CertificationForm:
         tk.Label(self.window, text="Certificate Link:").pack(pady=5)
         self.link_entry = tk.Entry(self.window, width=50)
         self.link_entry.pack(pady=5)
+
+        # Description
+        tk.Label(self.window, text="Description:").pack(pady=5)
+        self.desc_text = tk.Text(self.window, width=50, height=5)
+        self.desc_text.pack(pady=5)
 
         # Image
         tk.Label(self.window, text="Certificate Image:").pack(pady=5)
@@ -489,6 +494,7 @@ class CertificationForm:
 
         self.name_entry.insert(0, self.cert_data.get('name', ''))
         self.link_entry.insert(0, self.cert_data.get('link', ''))
+        self.desc_text.insert("1.0", self.cert_data.get('description') or '')
 
         if self.current_image_url:
             try:
@@ -507,6 +513,7 @@ class CertificationForm:
         """Submit the certification data."""
         name = self.name_entry.get().strip()
         link = self.link_entry.get().strip()
+        description = self.desc_text.get("1.0", tk.END).strip()
 
         if not name or not link:
             messagebox.showerror("Error", "Please fill in all required fields.")
@@ -528,7 +535,8 @@ class CertificationForm:
         cert_data = {
             "name": name,
             "link": link,
-            "image_path": image_url
+            "image_path": image_url,
+            "description": description
         }
 
         if self.supabase_manager:
